@@ -1,0 +1,14 @@
+FROM php:8-fpm
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+RUN apt-get update && \
+    apt-get install -y libzip-dev unzip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-install pdo_mysql zip
+
+COPY assets/fpm/bootstrap.sh /usr/local/bin
+
+CMD [ "bootstrap.sh" ]

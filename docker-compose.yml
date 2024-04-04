@@ -1,0 +1,68 @@
+version: "3"
+services:
+  nginx:
+    image: "test-nginx"
+    build:
+      context: build
+      dockerfile: Dockerfile.nginx
+    hostname: nginx
+    depends_on:
+      - symfony
+      - db
+    links:
+      - symfony
+      - db
+    networks:
+      - test_bridge
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      #- ./nginx/:/etc/nginx/conf.d/
+      - ./app:/var/www/html/app
+    restart: unless-stopped
+
+  symfony:
+    image: "symfony7-fpm"
+    build:
+      context: build
+      dockerfile: Dockerfile.fpm
+    hostname: php-fpm
+    depends_on:
+      - db
+    links:
+      - db
+    networks:
+      - test_bridge
+    volumes:
+      - ./app:/var/www/html/app
+    environment:
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.3
+    hostname: db
+    volumes:
+      - db-data:/var/lib/mysql:rw
+    networks:
+      - test_bridge
+    #ports:
+      #- 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    restart: unless-stopped
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  test_bridge:
+    driver: bridge
+    enable_ipv6: false
